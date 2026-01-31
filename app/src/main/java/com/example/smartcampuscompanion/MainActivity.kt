@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SmartCampusCompanionTheme {
                 val navController = rememberNavController()
-                AppNavGraph(navController, this)
+                AppNavGraph(navController, thi)
             }
         }
     }
