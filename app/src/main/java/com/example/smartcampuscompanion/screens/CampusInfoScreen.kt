@@ -54,3 +54,59 @@ fun CampusInfoScreen() {
         }
     }
 }
+
+@Composable
+fun DepartmentCard(department: Department) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Image(
+                painter = painterResource(id = department.imageRes),
+                contentDescription = department.name,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    text = department.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = Color(0xFF4A148C) // deep purple
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = department.contact,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
