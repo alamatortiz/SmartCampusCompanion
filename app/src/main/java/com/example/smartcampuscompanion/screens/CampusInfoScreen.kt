@@ -22,7 +22,7 @@ fun CampusInfoScreen() {
                     .fillMaxWidth()
                     .padding(8.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(15.dp)) {
                     Text(dept.name, style = MaterialTheme.typography.titleMedium)
                     Text(dept.contact)
                 }
