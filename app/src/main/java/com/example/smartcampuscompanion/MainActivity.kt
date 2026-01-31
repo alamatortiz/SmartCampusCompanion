@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
                         .background(
                             brush = Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFFA8E063), // light green
+                                    Color(0xFFA6DC63), // light green
                                     Color(0xFF56AB2F)  // dark green
                                 )
                             )
