@@ -57,3 +57,42 @@ fun DashboardScreen(
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = {
+                        navController.navigate(Routes.CAMPUS_INFO)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(30.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF6A5ACD)
+                    )
+                ) {
+                    Text(text = "Campus Information", color = Color.White)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        prefs.edit().putBoolean("logged_in", false).apply()
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.DASHBOARD) { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(30.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF6A5ACD)
+                    )
+                ) {
+                    Text(text = "Logout", color = Color.White)
+                }
+            }
+        }
+    }
+}
