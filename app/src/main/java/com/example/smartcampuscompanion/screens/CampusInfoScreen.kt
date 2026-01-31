@@ -1,3 +1,1 @@
-class CampusInfoScreen {
-
-}
+class CampusInfoScreen {}
