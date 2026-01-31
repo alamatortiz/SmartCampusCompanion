@@ -23,7 +23,7 @@ fun AppNavGraph(
 
     NavHost(
         navController = navController,
-        startDestination = if (isLoggedIn) Routes.DASHBOARD else Routes.LOGI
+        startDestination = if (isLoggedIn) Routes.DASHBOARD else Routes.LOGIN
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(navController, prefs)
