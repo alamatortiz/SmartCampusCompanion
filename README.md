@@ -1,6 +1,6 @@
-# 🎓 Smart Campus Companion (Phase 1)
+# Smart Campus Companion (Phase 1)
 
-## 📌 App Description
+## App Description
 Smart Campus Companion is an Android application built using Jetpack Compose that provides students with quick access to campus information.
 
 Phase 1 focuses on:
@@ -26,7 +26,7 @@ This phase demonstrates the **basic UI, navigation, and local state management**
 
 ---
 
-## 💻 Git Workflow
+## Git Workflow
 
 Phase 1 Git workflow follows a simple collaborative branching model:
 
