@@ -45,6 +45,6 @@ Phase 1 Git workflow follows a simple collaborative branching model:
 
 ### Commits
 - Written clearly and descriptively
-- Example: `Add CampusInfoScreen with DepartmentCard composable - papagayo`
+- Example: `Fully updated new login screen ui - papagayo`
 
 > This workflow ensures collaboration, version control, and organized integration for the team.
