@@ -28,9 +28,9 @@ fun CampusInfoScreen() {
             .background(
                 Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0xFF2E003E), // dark purple
-                        Color(0xFF8E2DE2), // bright purple
-                        Color(0xFF2E003E)  // dark purple
+                        Color(0xFF2E003E),
+                        Color(0xFF8E2DE2),
+                        Color(0xFF2E003E)
                     )
                 )
             )
@@ -43,7 +43,7 @@ fun CampusInfoScreen() {
             text = "Campus Departments",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White, // visible on purple background
+            color = Color.White,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
@@ -94,7 +94,7 @@ fun DepartmentCard(department: Department) {
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
-                    color = Color(0xFF4A148C) // deep purple
+                    color = Color(0xFF4A148C)
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))

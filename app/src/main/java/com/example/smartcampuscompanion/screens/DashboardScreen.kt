@@ -25,9 +25,9 @@ fun DashboardScreen(
             .background(
                 Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0xFF2E003E), // Dark purple
-                        Color(0xFF8E2DE2), // Bright purple
-                        Color(0xFF2E003E)  // Dark purple
+                        Color(0xFF2E003E),
+                        Color(0xFF8E2DE2),
+                        Color(0xFF2E003E)
                     )
                 )
             ),
@@ -53,7 +53,7 @@ fun DashboardScreen(
                 Text(
                     text = "Welcome, Student!",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = Color(0xFF6A1B9A) // Purple text
+                    color = Color(0xFF6A1B9A)
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
