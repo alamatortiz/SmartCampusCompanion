@@ -57,6 +57,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // Standard Icons (Person, Lock, etc)
+    implementation(libs.androidx.compose.material.icons.core)
+    // Extended Icons (Map, School, Settings, etc)
+    implementation(libs.androidx.compose.material.icons.extended)
 // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
