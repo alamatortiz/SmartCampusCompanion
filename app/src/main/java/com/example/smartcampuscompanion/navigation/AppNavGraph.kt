@@ -30,7 +30,6 @@ fun AppNavGraph(
     val prefs = context.getSharedPreferences("session", Context.MODE_PRIVATE)
     val isLoggedIn = prefs.getBoolean("logged_in", false)
 
-    // Initialize Database and ViewModel Factory
     val database = AppDatabase.getDatabase(context)
     val taskViewModel: TaskViewModel = viewModel(
         factory = TaskViewModelFactory(database.taskDao())

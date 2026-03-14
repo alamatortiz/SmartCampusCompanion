@@ -1,4 +1,4 @@
-package com.example.smartcampuscompanion.viewmodel
+package com.example.smartcampuscompanion.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -35,6 +35,12 @@ class TaskViewModel(private val taskDao: TaskDao) : ViewModel() {
     fun toggleTaskCompletion(task: Task) {
         viewModelScope.launch {
             taskDao.updateTask(task.copy(isCompleted = !task.isCompleted))
+        }
+    }
+
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            taskDao.updateTask(task)
         }
     }
 }
