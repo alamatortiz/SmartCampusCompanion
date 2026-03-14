@@ -5,9 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Task::class], version = 1, exportSchema = false)
+@Database(entities = [Task::class, Announcement::class, User::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun taskDao(): TaskDao
+    abstract fun announcementDao(): AnnouncementDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -19,7 +22,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "smart_campus_db"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
