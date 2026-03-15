@@ -49,8 +49,8 @@ During the integration of the `Registration` and `Login` modules, the team encou
 
 ### **Commit Standard**
 Commits are prefixed by the module name for clarity:
-* `[Room] Implemented UserDao and Registration logic - Pantaleon`
-* `[UI] Added Filter Chips to Announcement screen - Papagayo`
+* `Implemented UserDao and Registration logic - Pantaleon`
+* `Added Filter Chips to Announcement screen - Papagayo`
 
 ---
 > **Note:** This project is part of the Midterm requirement for the College of Computer Studies at Pamantasan ng Cabuyao.
