@@ -38,7 +38,7 @@ fun AnnouncementScreen(
     navController: NavController,
     prefs: SharedPreferences
 ) {
-    val announcements by viewModel.allAnnouncements.collectAsState()
+    val announcements by viewModel.announcements.collectAsState()
 
     // Sync Theme with Dashboard
     val isDark = remember { prefs.getBoolean("is_dark_mode", true) }
@@ -71,29 +71,53 @@ fun AnnouncementScreen(
                 .background(Brush.verticalGradient(listOf(startGradient, endGradient)))
                 .padding(innerPadding)
         ) {
-            if (announcements.isEmpty()) {
-                EmptyAnnouncementsState(textColor)
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        Text(
-                            text = "Latest Updates",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor
-                        )
-                        Text(
-                            text = "Stay informed about campus activities",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = subTextColor
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 2. ADD THE FILTER CHIPS HERE
+                item {
+                    Text(
+                        text = "Latest Updates",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // NEW FILTER SECTION
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val filterOptions = listOf("All", "Unread", "Read")
+                        filterOptions.forEach { filterTag ->
+                            FilterChip(
+                                selected = viewModel.currentFilter.value == filterTag,
+                                onClick = { viewModel.setFilter(filterTag) },
+                                label = { Text(filterTag) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFF8E2DE2),
+                                    selectedLabelColor = Color.White,
+                                    labelColor = subTextColor
+                                )
+                            )
+                        }
                     }
 
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                // 3. SHOW EMPTY STATE OR LIST
+                if (announcements.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillParentMaxHeight(0.7f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            EmptyAnnouncementsState(textColor)
+                        }
+                    }
+                } else {
                     items(announcements) { announcement ->
                         AnnouncementItem(
                             announcement = announcement,
