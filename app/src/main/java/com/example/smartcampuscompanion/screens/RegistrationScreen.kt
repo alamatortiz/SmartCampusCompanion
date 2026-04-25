@@ -26,26 +26,23 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.smartcampuscompanion.data.local.User
-import com.example.smartcampuscompanion.data.local.UserDao
-import kotlinx.coroutines.launch
+import com.example.smartcampuscompanion.ui.viewmodel.AuthState
+import com.example.smartcampuscompanion.ui.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistrationScreen(
     navController: NavController,
-    userDao: UserDao
+    authViewModel: AuthViewModel
 ) {
-    // State for input fields
     var studentId by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var department by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
     var confirmPassword by remember { mutableStateOf("") }
 
-    val scope = rememberCoroutineScope()
+    val authState by authViewModel.authState.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -64,20 +61,20 @@ fun RegistrationScreen(
                 )
             )
         },
-        containerColor = Color.Transparent // Background is handled by the Box
+        containerColor = Color.Transparent
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF121212))))
                 .padding(innerPadding)
-                .imePadding() // Essential for keyboard handling
+                .imePadding()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 24.dp)
-                    .verticalScroll(scrollState), // Allows scrolling when keyboard is up
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -93,8 +90,6 @@ fun RegistrationScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
                 )
-
-                // --- FORM FIELDS ---
 
                 OutlinedTextField(
                     value = studentId,
@@ -123,7 +118,11 @@ fun RegistrationScreen(
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedTextColor = Color.White, focusedTextColor = Color.White)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF8E2DE2),
+                        unfocusedTextColor = Color.White,
+                        focusedTextColor = Color.White
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -137,10 +136,14 @@ fun RegistrationScreen(
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedTextColor = Color.White, focusedTextColor = Color.White)
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF8E2DE2),
+                        unfocusedTextColor = Color.White,
+                        focusedTextColor = Color.White
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = password,
@@ -149,15 +152,22 @@ fun RegistrationScreen(
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null)
+                            Icon(
+                                if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = null
+                            )
                         }
                     },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF8E2DE2), unfocusedTextColor = Color.White, focusedTextColor = Color.White)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF8E2DE2),
+                        unfocusedTextColor = Color.White,
+                        focusedTextColor = Color.White
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -181,6 +191,15 @@ fun RegistrationScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                AnimatedVisibility(visible = authState is AuthState.Error) {
+                    Text(
+                        (authState as? AuthState.Error)?.message ?: "Error",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+
                 Button(
                     onClick = {
                         when {
@@ -188,21 +207,11 @@ fun RegistrationScreen(
                                 Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                             }
                             password != confirmPassword -> {
-                                // THE MATCH CHECK
                                 Toast.makeText(context, "Passwords do not match!", Toast.LENGTH_SHORT).show()
                             }
                             else -> {
-                                isLoading = true
-                                scope.launch {
-                                    try {
-                                        userDao.registerUser(User(studentId, name, password, department))
-                                        Toast.makeText(context, "Welcome, $name!", Toast.LENGTH_SHORT).show()
-                                        navController.popBackStack()
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "ID already exists!", Toast.LENGTH_SHORT).show()
-                                        isLoading = false
-                                    }
-                                }
+                                val email = "$studentId@campus.edu"
+                                authViewModel.register(email, password, name, studentId, department)
                             }
                         }
                     },
@@ -211,9 +220,9 @@ fun RegistrationScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2)),
-                    enabled = !isLoading
+                    enabled = authState !is AuthState.Loading
                 ) {
-                    if (isLoading) {
+                    if (authState is AuthState.Loading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                     } else {
                         Text("Complete Registration", fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -228,6 +237,14 @@ fun RegistrationScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+        }
+    }
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            Toast.makeText(context, "Account created! Please log in.", Toast.LENGTH_SHORT).show()
+            navController.popBackStack()
+            authViewModel.resetState()
         }
     }
 }
