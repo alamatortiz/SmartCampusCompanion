@@ -1,7 +1,7 @@
 package com.example.smartcampuscompanion.screens
 
 import android.content.SharedPreferences
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,26 +23,21 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.smartcampuscompanion.data.local.UserDao
 import com.example.smartcampuscompanion.navigation.Routes
-import kotlinx.coroutines.launch
-import androidx.core.content.edit
+import com.example.smartcampuscompanion.ui.viewmodel.AuthState
+import com.example.smartcampuscompanion.ui.viewmodel.AuthViewModel
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    userDao: UserDao,
+    authViewModel: AuthViewModel,
     prefs: SharedPreferences
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var isError by remember { mutableStateOf(false) }
+    val authState by authViewModel.authState.collectAsState()
 
-    val scope = rememberCoroutineScope()
-
-    // Gradient matching the Dashboard theme
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(Color(0xFF1A1A2E), Color(0xFF121212))
     )
@@ -52,7 +46,7 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundGradient)
-            .imePadding(), // Adjusts for keyboard
+            .imePadding(),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -61,7 +55,6 @@ fun LoginScreen(
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- HERO SECTION ---
             Surface(
                 modifier = Modifier.size(80.dp),
                 shape = CircleShape,
@@ -90,17 +83,15 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // --- INPUT FIELDS ---
             OutlinedTextField(
                 value = username,
-                onValueChange = { username = it; isError = false },
-                label = { Text("Student ID") },
+                onValueChange = { username = it },
+                label = { Text("Student ID or Email") },
                 placeholder = { Text("e.g. 2024-10001") },
                 leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
-                isError = isError,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF8E2DE2),
@@ -113,7 +104,7 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it; isError = false },
+                onValueChange = { password = it },
                 label = { Text("Password") },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 trailingIcon = {
@@ -128,7 +119,6 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
-                isError = isError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF8E2DE2),
@@ -137,10 +127,9 @@ fun LoginScreen(
                 )
             )
 
-            // Error Message
-            AnimatedVisibility(visible = isError) {
+            AnimatedVisibility(visible = authState is AuthState.Error) {
                 Text(
-                    "Invalid Student ID or Password",
+                    (authState as? AuthState.Error)?.message ?: "Error",
                     color = MaterialTheme.colorScheme.error,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(top = 8.dp)
@@ -149,34 +138,19 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- ACTION BUTTON ---
             Button(
                 onClick = {
-                    isLoading = true
-                    scope.launch {
-                        val user = userDao.login(username, password)
-                        if (user != null) {
-                            prefs.edit {
-                                putString("user_name", user.name)
-                                putBoolean("logged_in", true)
-                            }
-                            navController.navigate(Routes.DASHBOARD) {
-                                popUpTo(Routes.LOGIN) { inclusive = true }
-                            }
-                        } else {
-                            isError = true
-                            isLoading = false
-                        }
-                    }
+                    val email = if (username.contains("@")) username else "$username@campus.edu"
+                    authViewModel.login(email, password)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2)),
-                enabled = !isLoading
+                enabled = authState !is AuthState.Loading
             ) {
-                if (isLoading) {
+                if (authState is AuthState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
                     Text("Sign In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -185,13 +159,21 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- FOOTER ---
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("New student?", color = Color.White.copy(alpha = 0.6f))
                 TextButton(onClick = { navController.navigate(Routes.REGISTRATION) }) {
                     Text("Create Account", color = Color(0xFF8E2DE2), fontWeight = FontWeight.Bold)
                 }
             }
+        }
+    }
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            navController.navigate(Routes.DASHBOARD) {
+                popUpTo(Routes.LOGIN) { inclusive = true }
+            }
+            authViewModel.resetState()
         }
     }
 }
