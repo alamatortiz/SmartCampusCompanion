@@ -13,4 +13,8 @@ interface AnnouncementDao {
 
     @Update
     suspend fun updateAnnouncement(announcement: Announcement)
+
+    @Query("SELECT * FROM announcements WHERE isRead = :isRead ORDER BY date DESC")
+    fun getAnnouncementsByStatus(isRead: Boolean): Flow<List<Announcement>>
+
 }
