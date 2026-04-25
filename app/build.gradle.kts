@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.devtools.ksp) // ADD THIS
+    alias(libs.plugins.google.gms.google.services) // ADD THIS
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -36,6 +37,17 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+        }
+    }
 }
 
 dependencies {
@@ -62,11 +74,27 @@ dependencies {
     // Extended Icons (Map, School, Settings, etc)
     implementation(libs.androidx.compose.material.icons.extended)
 // Room Database
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+
 
     // ViewModel & Lifecycle for Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // DataStore for Settings (Dark Mode toggle persistence)
+    implementation(libs.androidx.datastore.preferences)
+
+    // Ktor for HTTP requests
+    implementation("io.ktor:ktor-client-android:2.3.12")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+    implementation("io.ktor:ktor-client-logging:2.3.12")
+
+// Google Auth for OAuth token from service account
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 }
