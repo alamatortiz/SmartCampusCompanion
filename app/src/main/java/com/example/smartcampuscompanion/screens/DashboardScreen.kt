@@ -27,18 +27,18 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.smartcampuscompanion.navigation.Routes
 import androidx.core.content.edit
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
-    prefs: SharedPreferences
+    prefs: SharedPreferences,
+    authViewModel: com.example.smartcampuscompanion.ui.viewmodel.AuthViewModel
 ) {
-    // 1. Theme State (Reads from prefs, defaults to true/dark)
-    var isDark by remember {
-        mutableStateOf(prefs.getBoolean("is_dark_mode", true))
-    }
+    val isDark = remember { prefs.getBoolean("is_dark_mode", true) }
+    val userRole = remember { prefs.getString("user_role", "student") ?: "student" }
+    val isAdmin = userRole == "admin"
 
-    // 2. Dynamic Color Palette
     val startGradient by animateColorAsState(
         targetValue = if (isDark) Color(0xFF1A1A2E) else Color(0xFFF0F2F5),
         animationSpec = tween(500), label = "bg"
@@ -53,6 +53,7 @@ fun DashboardScreen(
     )
     val subTextColor = textColor.copy(alpha = 0.6f)
     val studentName = remember { prefs.getString("user_name", "Student") ?: "Student" }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -64,23 +65,15 @@ fun DashboardScreen(
                     )
                 },
                 actions = {
-                    // THEME TOGGLE BUTTON
-                    IconButton(onClick = {
-                        isDark = !isDark
-                        prefs.edit { putBoolean("is_dark_mode", isDark) }
-                    }) {
-                        Icon(
-                            imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Toggle Theme",
-                            tint = if (isDark) Color(0xFFFFD54F) else Color(0xFF5C6BC0)
-                        )
+                    // Settings
+                    IconButton(onClick = { navController.navigate(Routes.SETTINGS) }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = textColor)
                     }
-
-                    // LOGOUT BUTTON
+                    // Logout
                     IconButton(onClick = {
-                        prefs.edit { putBoolean("logged_in", false) }
+                        authViewModel.logout()
                         navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.DASHBOARD) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
                     }) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = textColor)
@@ -105,21 +98,36 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(text = "Welcome back,", style = MaterialTheme.typography.bodyLarge, color = subTextColor)
-                Text(
-                    text = studentName,
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                    color = textColor
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = studentName,
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                        color = textColor
+                    )
+                    if (isAdmin) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = Color(0xFF8E2DE2),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                "ADMIN",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Reusable Status Card
                 QuickStatusCard(isDark)
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(text = "University Services", style = MaterialTheme.typography.titleSmall, color = subTextColor)
-
                 Spacer(modifier = Modifier.height(16.dp))
 
                 LazyVerticalGrid(
@@ -145,7 +153,7 @@ fun DashboardScreen(
                     }
                     item {
                         MenuCard("Resources", Icons.AutoMirrored.Filled.LibraryBooks, Color(0xFFFF7043), isDark) {
-                            // Placeholder
+                            navController.navigate(Routes.RESOURCES)
                         }
                     }
                 }

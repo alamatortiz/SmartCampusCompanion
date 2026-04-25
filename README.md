@@ -1,50 +1,56 @@
-# Smart Campus Companion (Phase 1)
+# Smart Campus Companion (Phase 2)
 
-## App Description
-Smart Campus Companion is an Android application built using Jetpack Compose that provides students with quick access to campus information.
+## 📱 App Description
+Smart Campus Companion is a robust Android application built with **Jetpack Compose** designed to streamline student life. Moving beyond static layouts, Phase 2 introduces dynamic data persistence and a scalable architecture.
 
-Phase 1 focuses on:
-- A login screen for student authentication
-- A dashboard with navigation options
-- A campus information screen displaying departments
-- Static data using `CampusData`
-- Logout functionality
-
-This phase demonstrates the **basic UI, navigation, and local state management**.
+### **Phase 2 Technical Milestones:**
+* **User Authentication System:** Secure Registration and Login powered by **Room Database**, featuring password validation and session persistence via **SharedPreferences**.
+* **Dynamic Task Manager:** A full CRUD (Create, Read, Update, Delete) module for personal academic tracking.
+* **Interactive Announcement Hub:** Real-time filtering (Read/Unread states) and "Smart Seeding" for campus-wide notices.
+* **Architecture:** Implementation of the **MVVM (Model-View-ViewModel)** pattern for clean separation of concerns.
+* **Local Persistence:** A multi-table SQLite database managed via Room for offline-first reliability.
 
 ---
 
-| Role | Responsibility |
-|------|----------------|
-| Alvin Matthew Ortiz     | Team Leader | Oversees progress and approves merges |
-| Alvin Matthew Ortiz     | Git Manager | Manages branches and pull requests |
-| Eloisa Papagayo         | UI/UX Developer | Designs layouts and user experience |
-| Gabriela Anne Pantaleon | Feature Developer | Implements application logic |
-| Andrei Vincent Parala   | QA / Documenter | Testing and documentation |
+## 👥 The Team
 
-> Note: Each member was responsible for a specific module to allow modular development and easy integration.
+| Role | Name | Responsibility |
+| :--- | :--- | :--- |
+| **Team Leader** | Alvin Matthew Ortiz | Project oversight, architecture design, and merge approvals. |
+| **Git Manager** | Alvin Matthew Ortiz | Branch strategy, pull request reviews, and conflict resolution. |
+| **UI/UX Developer** | Eloisa Papagayo | Jetpack Compose styling, theme engine, and interactive components. |
+| **Feature Developer** | Gabriela Anne Pantaleon | Room DAO implementation, ViewModel logic, and data filtering. |
+| **QA / Documenter** | Andrei Vincent Parala | Logic testing, bug tracking, and technical documentation. |
 
 ---
 
-## Git Workflow
+## 🛠️ Tech Stack
+* **Language:** Kotlin
+* **UI Framework:** Jetpack Compose
+* **Database:** Room (SQLite)
+* **Navigation:** Compose Navigation
+* **Local Storage:** SharedPreferences (Theme & Session management)
+* **Concurrency:** Kotlin Coroutines & StateFlow
 
-Phase 1 Git workflow follows a simple collaborative branching model:
+---
 
-### Main Branch (`main`)
-- Contains the stable version of the project
-- Only updated with **tested and reviewed code**
+## 🖇️ Git Workflow (Advanced)
 
-### Feature Branches
-- Each team member works on the develop and main branch:
-- Branches are created from `main` and merged after review
+Phase 2 utilized a **Feature Branch Workflow** to manage complex database migrations and multi-member integration.
 
-### Pull Requests (PRs)
-- Each completed feature branch is merged via pull request
-- Team members review code before merging
-- Ensures clean integration
+### **Branching Strategy**
+* **`main`**: The production-ready stable core.
+* **`feature/` branches**: Individual modules (e.g., `feature/task-manager`, `feature/announcements`) developed in isolation to prevent breaking the main build.
 
-### Commits
-- Written clearly and descriptively
-- Example: `Fully updated new login screen ui - papagayo`
+### **The "Midterm" Challenge: Merge Conflict Resolution**
+During the integration of the `Registration` and `Login` modules, the team encountered a **Merge Conflict** in the `AppDatabase.kt` file. 
+* **The Cause:** Two members added different entities (User and Announcement) to the Database class simultaneously.
+* **The Fix:** Resolved manually by merging the DAO declarations and incrementing the Database version to `3`, utilizing `fallbackToDestructiveMigration()` to ensure schema stability during testing.
 
-> This workflow ensures collaboration, version control, and organized integration for the team.
+### **Commit Standard**
+Commits are prefixed by the module name for clarity:
+* `Implemented UserDao and Registration logic - Pantaleon`
+* `Added Filter Chips to Announcement screen - Papagayo`
+
+---
+> **Note:** This project is part of the Midterm requirement for the College of Computer Studies at Pamantasan ng Cabuyao.
