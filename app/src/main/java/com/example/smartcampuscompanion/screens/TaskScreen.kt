@@ -30,32 +30,45 @@ import com.example.smartcampuscompanion.data.local.Task
 import com.example.smartcampuscompanion.ui.viewmodel.TaskViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.smartcampuscompanion.util.AlarmScheduler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel,
-    navController: NavController, // Added NavController
+    navController: NavController,
     prefs: SharedPreferences
 ) {
-    val tasks by viewModel.allTasks.collectAsState()
+    val tasks by viewModel.filteredTasks.collectAsState()
+    val selectedDateFilter by viewModel.selectedDateFilter.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.loadTasksForCurrentUser()
+    }
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     var showSheet by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Theme Sync
     val isDark = remember { prefs.getBoolean("is_dark_mode", true) }
     val startGradient by animateColorAsState(if (isDark) Color(0xFF1A1A2E) else Color(0xFFF0F2F5), tween(500), label = "")
     val endGradient by animateColorAsState(if (isDark) Color(0xFF121212) else Color(0xFFFFFFFF), tween(500), label = "")
     val textColor = if (isDark) Color.White else Color(0xFF1A1A1A)
     val subTextColor = textColor.copy(alpha = 0.6f)
 
-    // Form States
     var title by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
     var selectedTimestamp by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     fun openForAdd() {
         editingTask = null; title = ""; desc = ""; selectedTimestamp = System.currentTimeMillis(); showSheet = true
@@ -68,7 +81,7 @@ fun TaskScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { }, // Title is handled in the body for better design
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = textColor)
@@ -78,6 +91,7 @@ fun TaskScreen(
             )
         },
         containerColor = Color.Transparent,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { openForAdd() },
@@ -95,52 +109,79 @@ fun TaskScreen(
                 .background(Brush.verticalGradient(listOf(startGradient, endGradient)))
                 .padding(padding)
         ) {
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                // Header Area
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Schedule",
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                            color = textColor
-                        )
-                        Text(
-                            "${tasks.count { !it.isCompleted }} pending tasks",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = subTextColor
-                        )
-                    }
-
-                    /*
-                       CALENDAR BUTTON:
-                       This now triggers a DatePickerDialog.
-                       In a real app, you'd use this to filter tasks by the chosen date.
-                    */
-                    Surface(
-                        onClick = {
-                            DatePickerDialog(context, { _, y, m, d ->
-                                // Filter logic would go here
-                            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-                        },
-                        color = Color(0xFF8E2DE2).copy(alpha = 0.1f),
-                        shape = CircleShape,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(Icons.Default.CalendarMonth, "Calendar Filter", tint = Color(0xFF8E2DE2), modifier = Modifier.padding(12.dp))
-                    }
+            if (isLoading && tasks.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF8E2DE2))
                 }
+            } else {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Schedule",
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                color = textColor
+                            )
+                            Text(
+                                "${tasks.count { !it.isCompleted }} pending tasks",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = subTextColor
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                        Surface(
+                            onClick = {
+                                DatePickerDialog(context, { _, y, m, d ->
+                                    calendar.set(y, m, d)
+                                    calendar.set(Calendar.HOUR_OF_DAY, 0)
+                                    calendar.set(Calendar.MINUTE, 0)
+                                    calendar.set(Calendar.SECOND, 0)
+                                    calendar.set(Calendar.MILLISECOND, 0)
+                                    viewModel.setDateFilter(calendar.timeInMillis)
+                                }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+                            },
+                            color = if (selectedDateFilter != null) Color(0xFF8E2DE2) else Color(0xFF8E2DE2).copy(alpha = 0.1f),
+                            shape = CircleShape,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(Icons.Default.CalendarMonth, "Calendar Filter", tint = if (selectedDateFilter != null) Color.White else Color(0xFF8E2DE2), modifier = Modifier.padding(12.dp))
+                        }
+                    }
 
-                if (tasks.isEmpty()) {
-                    EmptyTaskState(textColor)
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        items(tasks) { task ->
-                            TaskItem(task, isDark, { viewModel.toggleTaskCompletion(task) }, { viewModel.deleteTask(task) }, { openForEdit(task) })
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    if (selectedDateFilter != null) {
+                        val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                        val dateLabel = dateFormat.format(java.util.Date(selectedDateFilter!!))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            AssistChip(
+                                onClick = { viewModel.clearDateFilter() },
+                                label = { Text("Filtered: $dateLabel") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.CalendarMonth, contentDescription = null, Modifier.size(18.dp))
+                                },
+                                trailingIcon = {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", Modifier.size(18.dp))
+                                }
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    if (tasks.isEmpty()) {
+                        EmptyTaskState(textColor)
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(bottom = 80.dp)
+                        ) {
+                            items(tasks, key = { it.documentId.ifEmpty { it.id.toString() } }) { task ->
+                                TaskItem(task, isDark, { viewModel.toggleTaskCompletion(task) }, { viewModel.deleteTask(task) }, { openForEdit(task) })
+                            }
                         }
                     }
                 }
@@ -159,7 +200,6 @@ fun TaskScreen(
                         OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("Notes") }, modifier = Modifier.fillMaxWidth())
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Styled Date Trigger
                         Surface(
                             onClick = {
                                 DatePickerDialog(context, { _, y, m, d ->
@@ -186,12 +226,22 @@ fun TaskScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(
                             onClick = {
-                                if (editingTask == null) viewModel.addTask(title, desc, selectedTimestamp)
-                                else viewModel.updateTask(editingTask!!.copy(title = title, description = desc, dueDate = selectedTimestamp))
+                                if (editingTask == null) {
+                                    viewModel.addTask(title, desc, selectedTimestamp)
+                                    // Schedule reminder for new task
+                                    val fakeId = (title + selectedTimestamp).hashCode()
+                                    AlarmScheduler.scheduleTaskReminder(context, fakeId, title, selectedTimestamp)
+                                } else {
+                                    viewModel.updateTask(editingTask!!.copy(title = title, description = desc, dueDate = selectedTimestamp))
+                                    // Reschedule reminder for updated task
+                                    val fakeId = (title + selectedTimestamp).hashCode()
+                                    AlarmScheduler.scheduleTaskReminder(context, fakeId, title, selectedTimestamp)
+                                }
                                 showSheet = false
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2))
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2)),
+                            enabled = title.isNotBlank()
                         ) { Text("Save Task") }
                         Spacer(modifier = Modifier.height(20.dp))
                     }
@@ -206,6 +256,7 @@ fun TaskItem(task: Task, isDark: Boolean, onToggle: () -> Unit, onDelete: () -> 
     val dateLabel = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(task.dueDate))
     val containerColor = if (isDark) Color(0xFF1E1E2C) else Color.White
     val textColor = if (isDark) Color.White else Color.Black
+    val context = LocalContext.current
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().clickable { onEdit() },
@@ -248,7 +299,12 @@ fun TaskItem(task: Task, isDark: Boolean, onToggle: () -> Unit, onDelete: () -> 
                 }
             }
 
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = {
+                // Cancel reminder before deleting
+                val fakeId = (task.title + task.dueDate).hashCode()
+                AlarmScheduler.cancelTaskReminder(context, fakeId)
+                onDelete()
+            }) {
                 Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color(0xFFE57373))
             }
         }
