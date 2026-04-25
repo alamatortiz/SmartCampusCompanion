@@ -13,10 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,13 +36,31 @@ fun AnnouncementScreen(
     prefs: SharedPreferences
 ) {
     val announcements by viewModel.announcements.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.loadReadStatusForCurrentUser()
+    }
+    val error by viewModel.error.collectAsState()
+    val isAdmin = remember {
+        prefs.getString("user_role", "student") == "admin" ||
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email?.lowercase() == "admin@campus.edu"
+    }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showPostSheet by remember { mutableStateOf(false) }
 
-    // Sync Theme with Dashboard
     val isDark = remember { prefs.getBoolean("is_dark_mode", true) }
     val startGradient by animateColorAsState(if (isDark) Color(0xFF1A1A2E) else Color(0xFFF0F2F5), tween(500), label = "")
     val endGradient by animateColorAsState(if (isDark) Color(0xFF121212) else Color(0xFFFFFFFF), tween(500), label = "")
     val textColor = if (isDark) Color.White else Color(0xFF1A1A1A)
     val subTextColor = textColor.copy(alpha = 0.6f)
+
+    // Error snackbar
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -63,6 +78,19 @@ fun AnnouncementScreen(
                 )
             )
         },
+        floatingActionButton = {
+            if (isAdmin) {
+                ExtendedFloatingActionButton(
+                    onClick = { showPostSheet = true },
+                    containerColor = Color(0xFF8E2DE2),
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    icon = { Icon(Icons.Default.Add, "Post") },
+                    text = { Text("Post Notice") }
+                )
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.Transparent
     ) { innerPadding ->
         Box(
@@ -71,61 +99,120 @@ fun AnnouncementScreen(
                 .background(Brush.verticalGradient(listOf(startGradient, endGradient)))
                 .padding(innerPadding)
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // 2. ADD THE FILTER CHIPS HERE
-                item {
-                    Text(
-                        text = "Latest Updates",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor
-                    )
+            if (isLoading && announcements.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF8E2DE2))
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "Latest Updates",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val filterOptions = listOf("All", "Unread", "Read")
+                            val currentFilter by viewModel.currentFilter.collectAsState()
 
-                    // NEW FILTER SECTION
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val filterOptions = listOf("All", "Unread", "Read")
-                        filterOptions.forEach { filterTag ->
-                            FilterChip(
-                                selected = viewModel.currentFilter.value == filterTag,
-                                onClick = { viewModel.setFilter(filterTag) },
-                                label = { Text(filterTag) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color(0xFF8E2DE2),
-                                    selectedLabelColor = Color.White,
-                                    labelColor = subTextColor
+                            filterOptions.forEach { filterTag ->
+                                FilterChip(
+                                    selected = currentFilter == filterTag,
+                                    onClick = { viewModel.setFilter(filterTag) },
+                                    label = { Text(filterTag) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFF8E2DE2),
+                                        selectedLabelColor = Color.White,
+                                        labelColor = subTextColor
+                                    )
                                 )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+
+                    if (announcements.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillParentMaxHeight(0.7f).fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                EmptyAnnouncementsState(textColor)
+                            }
+                        }
+                    } else {
+                        items(announcements, key = { it.documentId.ifEmpty { it.id.toString() } }) { announcement ->
+                            AnnouncementItem(
+                                announcement = announcement,
+                                isDark = isDark,
+                                onRead = { viewModel.markAsRead(announcement) }
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
                 }
+            }
+        }
+    }
 
-                // 3. SHOW EMPTY STATE OR LIST
-                if (announcements.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillParentMaxHeight(0.7f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            EmptyAnnouncementsState(textColor)
-                        }
-                    }
-                } else {
-                    items(announcements) { announcement ->
-                        AnnouncementItem(
-                            announcement = announcement,
-                            isDark = isDark,
-                            onRead = { viewModel.markAsRead(announcement) }
-                        )
-                    }
+    // Admin Post Bottom Sheet
+    if (showPostSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPostSheet = false },
+            containerColor = if (isDark) Color(0xFF1E1E2C) else Color.White
+        ) {
+            var title by remember { mutableStateOf("") }
+            var content by remember { mutableStateOf("") }
+
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+            ) {
+                Text(
+                    "Post Announcement",
+                    color = textColor,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("Content") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = {
+                        viewModel.postAnnouncement(title, content)
+                        showPostSheet = false
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E2DE2)),
+                    enabled = title.isNotBlank() && content.isNotBlank()
+                ) {
+                    Text("Publish", fontWeight = FontWeight.Bold)
                 }
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -138,7 +225,6 @@ fun AnnouncementItem(announcement: Announcement, isDark: Boolean, onRead: () -> 
     val textColor = if (isDark) Color.White else Color(0xFF1A1A1A)
     val accentColor = Color(0xFF8E2DE2)
 
-    // Automatically mark as read when expanded
     LaunchedEffect(isExpanded) {
         if (isExpanded && !announcement.isRead) {
             onRead()
@@ -148,17 +234,15 @@ fun AnnouncementItem(announcement: Announcement, isDark: Boolean, onRead: () -> 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize() // Smoothly grow/shrink
+            .animateContentSize()
             .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (isDark) 0.dp else 2.dp),
-        // Subtle border for unread items
         border = if (!announcement.isRead) androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.5f)) else null
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Category Icon
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -187,7 +271,7 @@ fun AnnouncementItem(announcement: Announcement, isDark: Boolean, onRead: () -> 
                         )
                     )
                     Text(
-                        text = "Posted 2 hours ago", // Placeholder for actual date
+                        text = "Posted recently",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )
