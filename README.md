@@ -1,14 +1,29 @@
-# Smart Campus Companion (Phase 2)
+# Smart Campus Companion (Full Phase Release)
 
-## 📱 App Description
-Smart Campus Companion is a robust Android application built with **Jetpack Compose** designed to streamline student life. Moving beyond static layouts, Phase 2 introduces dynamic data persistence and a scalable architecture.
+## 📱 Project Overview
+Smart Campus Companion is a comprehensive Android ecosystem built with **Jetpack Compose** designed to centralize and secure student life. The project evolved from a static UI prototype into a fully functional, multi-user application with strict data isolation and enterprise-ready architecture.
 
-### **Phase 2 Technical Milestones:**
-* **User Authentication System:** Secure Registration and Login powered by **Room Database**, featuring password validation and session persistence via **SharedPreferences**.
-* **Dynamic Task Manager:** A full CRUD (Create, Read, Update, Delete) module for personal academic tracking.
-* **Interactive Announcement Hub:** Real-time filtering (Read/Unread states) and "Smart Seeding" for campus-wide notices.
-* **Architecture:** Implementation of the **MVVM (Model-View-ViewModel)** pattern for clean separation of concerns.
-* **Local Persistence:** A multi-table SQLite database managed via Room for offline-first reliability.
+---
+
+## 🚀 Development Roadmap
+
+### **Phase 1: Foundations (The Blueprint)**
+* **High-Fidelity UI:** Implementation of the **Material 3** design system with custom brand gradients.
+* **Theming Engine:** Dynamic Dark/Light mode persistence using **DataStore**.
+* **Navigation Architecture:** Centralized `AppNavGraph` utilizing Compose Navigation for seamless screen transitions.
+* **Splash & Branding:** Custom animated entry sequences and brand identity (formerly Morplit, now **Morpwatch**).
+
+### **Phase 2: Local Persistence (The Engine)**
+* **User Authentication:** Secure registration and login modules powered by **Room Database**.
+* **MVVM Architecture:** Strict separation of concerns using ViewModels and StateFlow for reactive UI updates.
+* **CRUD Task Manager:** Initial implementation of personal academic tracking.
+* **Announcement Hub:** Status-based filtering (Read/Unread) with smart database seeding.
+
+### **Phase 3: Security & Multi-Tenancy (Current Phase)**
+* **Strict Data Isolation:** Implementation of a **User-Aware architecture** where all database queries are filtered by `studentId` to prevent cross-user data leakage.
+* **String-Based Identity Mapping:** Transitioned from integer IDs to **String-based UUIDs** to match official University Student ID formats (e.g., `2024-10001`).
+* **Session Management:** Robust session handling using **SharedPreferences**, injecting the active User ID into ViewModels at the Navigation level.
+* **Enterprise Integration:** Initial setup for **Ktor** (Networking) and **Firebase** (Cloud Auth/Messaging) for future cloud synchronization.
 
 ---
 
@@ -16,8 +31,8 @@ Smart Campus Companion is a robust Android application built with **Jetpack Comp
 
 | Role | Name | Responsibility |
 | :--- | :--- | :--- |
-| **Team Leader** | Alvin Matthew Ortiz | Project oversight, architecture design, and merge approvals. |
-| **Git Manager** | Alvin Matthew Ortiz | Branch strategy, pull request reviews, and conflict resolution. |
+| **Team Leader** | Alvin Matthew Ortiz | Project oversight, architecture design, and system integration. |
+| **Git Manager** | Alvin Matthew Ortiz | Branch strategy, shelf management, and conflict resolution. |
 | **UI/UX Developer** | Eloisa Papagayo | Jetpack Compose styling, theme engine, and interactive components. |
 | **Feature Developer** | Gabriela Anne Pantaleon | Room DAO implementation, ViewModel logic, and data filtering. |
 | **QA / Documenter** | Andrei Vincent Parala | Logic testing, bug tracking, and technical documentation. |
@@ -25,32 +40,28 @@ Smart Campus Companion is a robust Android application built with **Jetpack Comp
 ---
 
 ## 🛠️ Tech Stack
-* **Language:** Kotlin
-* **UI Framework:** Jetpack Compose
-* **Database:** Room (SQLite)
-* **Navigation:** Compose Navigation
-* **Local Storage:** SharedPreferences (Theme & Session management)
-* **Concurrency:** Kotlin Coroutines & StateFlow
+* **Language:** Kotlin (Coroutines & StateFlow)
+* **UI Framework:** Jetpack Compose (Material 3)
+* **Database:** Room SQLite (Multi-Table with Foreign Key logic)
+* **Session:** SharedPreferences (String-based Session Persistence)
+* **Networking:** Ktor Client (Content Negotiation & Serialization)
+* **Cloud:** Firebase (Auth & Messaging Ready)
 
 ---
 
-## 🖇️ Git Workflow (Advanced)
+## 🖇️ Git Workflow & Troubleshooting
 
-Phase 2 utilized a **Feature Branch Workflow** to manage complex database migrations and multi-member integration.
+### **Advanced Feature Branching**
+We utilized a `feature/` branch strategy to isolate high-risk changes, such as the transition from `Int` to `String` for primary keys and the implementation of session-based filtering.
 
-### **Branching Strategy**
-* **`main`**: The production-ready stable core.
-* **`feature/` branches**: Individual modules (e.g., `feature/task-manager`, `feature/announcements`) developed in isolation to prevent breaking the main build.
+### **Key Challenge: Data Leakage & Type Mismatch**
+During Phase 3, we identified a critical bug where users could see each other's tasks.
+* **The Root Cause:** ViewModels were initialized at the top level of the NavGraph, causing them to capture a default `-1` ID before login was complete.
+* **The Fix:** Implemented **Scoped ViewModel Initialization** inside individual `composable` routes. This ensures the `user_id` is pulled from the session *after* authentication, guaranteeing that data is only fetched for the specific `studentId` logged in.
 
-### **The "Midterm" Challenge: Merge Conflict Resolution**
-During the integration of the `Registration` and `Login` modules, the team encountered a **Merge Conflict** in the `AppDatabase.kt` file. 
-* **The Cause:** Two members added different entities (User and Announcement) to the Database class simultaneously.
-* **The Fix:** Resolved manually by merging the DAO declarations and incrementing the Database version to `3`, utilizing `fallbackToDestructiveMigration()` to ensure schema stability during testing.
-
-### **Commit Standard**
-Commits are prefixed by the module name for clarity:
-* `Implemented UserDao and Registration logic - Pantaleon`
-* `Added Filter Chips to Announcement screen - Papagayo`
+### **Database Versioning**
+* **Version 1-2:** Initial setup and User/Announcement table integration.
+* **Version 3:** Implemented `fallbackToDestructiveMigration()` to update the `userId` column from `Int` to `String` to support alphanumeric Student IDs and ensure schema stability.
 
 ---
-> **Note:** This project is part of the Midterm requirement for the College of Computer Studies at Pamantasan ng Cabuyao.
+> **Note:** This project is a Midterm requirement for the College of Computer Studies at **Pamantasan ng Cabuyao**. It serves as a proof-of-concept for secure, offline-first campus management systems.
